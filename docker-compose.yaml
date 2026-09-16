@@ -1,0 +1,121 @@
+version: "3.8"
+
+services:
+  # Exporter yang narik metrik dari RouterOS API (router ITC)
+  mktxp:
+    image: ghcr.io/akpw/mktxp:latest
+    container_name: itc-mktxp
+    volumes:
+      - ./mktxp:/home/mktxp/mktxp/
+    ports:
+      - "49090:49090"   # endpoint metrics buat di-scrape Prometheus
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 128M
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: itc-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/rules:/etc/prometheus/rules
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - mktxp
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: itc-alertmanager
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128M
+
+  smokeping:
+    image: quay.io/superq/smokeping-prober:latest
+    container_name: itc-smokeping
+    privileged: true
+    volumes:
+      - ./smokeping/smokeping.yml:/config/smokeping.yml
+    command:
+      - "--config.file=/config/smokeping.yml"
+    ports:
+      - "9374:9374"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 64M
+
+  telegram-bot:
+    build: ./telegram-bot
+    container_name: itc-telegram-bot
+    environment:
+      - BOT_TOKEN=GANTI_DENGAN_BOT_TOKEN
+      - PROMETHEUS_URL=http://prometheus:9090
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128M
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: itc-cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: itc-grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=ganti_password_ini
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+volumes:
+  prometheus-data:
+  grafana-data:
