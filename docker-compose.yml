@@ -1,13 +1,11 @@
-version: "3.8"
-
 services:
   mktxp:
     image: ghcr.io/akpw/mktxp:latest
-    container_name: itc-mktxp
+    container_name: w6mon-mktxp
     volumes:
       - ./mktxp:/home/mktxp/mktxp/
     ports:
-      - "49090:49090"   
+      - "49090:49090"
     restart: unless-stopped
     deploy:
       resources:
@@ -17,7 +15,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: itc-prometheus
+    container_name: w6mon-prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./prometheus/rules:/etc/prometheus/rules
@@ -35,7 +33,7 @@ services:
 
   alertmanager:
     image: prom/alertmanager:latest
-    container_name: itc-alertmanager
+    container_name: w6mon-alertmanager
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     ports:
@@ -49,7 +47,7 @@ services:
 
   smokeping:
     image: quay.io/superq/smokeping-prober:latest
-    container_name: itc-smokeping
+    container_name: w6mon-smokeping
     privileged: true
     volumes:
       - ./smokeping/smokeping.yml:/config/smokeping.yml
@@ -66,9 +64,9 @@ services:
 
   telegram-bot:
     build: ./telegram-bot
-    container_name: itc-telegram-bot
+    container_name: w6mon-telegram-bot
     environment:
-      - BOT_TOKEN=GANTI_DENGAN_BOT_TOKEN
+      - BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - PROMETHEUS_URL=http://prometheus:9090
     depends_on:
       - prometheus
@@ -81,7 +79,7 @@ services:
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
-    container_name: itc-cadvisor
+    container_name: w6mon-cadvisor
     privileged: true
     volumes:
       - /:/rootfs:ro
@@ -99,13 +97,13 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: itc-grafana
+    container_name: w6mon-grafana
     volumes:
       - grafana-data:/var/lib/grafana
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=ganti_password_ini
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     depends_on:
       - prometheus
     restart: unless-stopped
