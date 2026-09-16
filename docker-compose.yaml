@@ -1,14 +1,13 @@
 version: "3.8"
 
 services:
-  # Exporter yang narik metrik dari RouterOS API (router ITC)
   mktxp:
     image: ghcr.io/akpw/mktxp:latest
     container_name: itc-mktxp
     volumes:
       - ./mktxp:/home/mktxp/mktxp/
     ports:
-      - "49090:49090"   # endpoint metrics buat di-scrape Prometheus
+      - "49090:49090"   
     restart: unless-stopped
     deploy:
       resources:
